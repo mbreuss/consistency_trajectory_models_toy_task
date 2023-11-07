@@ -19,7 +19,7 @@ if __name__ == "__main__":
     use_pretraining = False
     cm = ConsistencyTrajectoryModel(
         sampler_type='euler',
-        lr=1e-4,
+        lr=1e-3,
         sigma_data=0.5,
         sigma_min=0.05,
         sigma_max=1,
@@ -29,10 +29,10 @@ if __name__ == "__main__":
         ema_rate=0.999,
         use_teacher=False,
     )
-    train_epochs = 2000
+    train_epochs = 1001
     # chose one of the following toy tasks: 'three_gmm_1D' 'uneven_two_gmm_1D' 'two_gmm_1D' 'single_gaussian_1D'
     data_manager = DataGenerator('two_gmm_1D')
-    samples, cond = data_manager.generate_samples(10000)
+    samples, cond = data_manager.generate_samples(5000)
     samples = samples.reshape(-1, 1).to(device)
     pbar = tqdm(range(train_epochs))
     
