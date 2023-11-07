@@ -1,13 +1,14 @@
 # cmt_toy_task
+
+
 Minimal unofficial implementation of Consistency Trajectory models proposed in [paper_link](https://openreview.net/attachment?id=ymjI8feDTD&name=pdf).
+
 ---
 
 ### Installation
 
 ```bash
-
 pip install -e .
-
 ```
 
 ---
@@ -32,7 +33,6 @@ The original paper proposes the following training objective consisting of a sco
 However, since we do not wanna use GAIL style training (yet) we only use the score matching objective and the consistency loss.
 
 $$
-
 \mathcal{L} = \lambda_{\text{Score}} \mathcal{L}_{score} +\lambda_{\text{CTM}}  \mathcal{L}_{consistency} + \lambda_{\text{GAN}} \mathcal{L}_{GAN}
 $$
 
@@ -41,6 +41,7 @@ The score matching objective is defined as follows:
 $$
 \mathcal{L}_{score} = \mathbb{E}_{x_0 \sim p_0} \left[ \left\| \nabla_{x_0} \log p_{\theta}(x_0) - f_{\theta}(x_0, t=0) \right\|^2 \right]
 $$
+
 The consistency loss is defined as follows:
 
 $$

@@ -462,7 +462,7 @@ class ConsistencyTrajectoryModel(nn.Module):
 
         x = torch.randn_like(x_shape).to(self.device) * self.sigma_max * 1.5
         sampled_x.append(x)
-        x = self.cmt_wrapper(self.model, x, cond, torch.tensor([self.sigma_max]), torch.tensor([0]))
+        x = self.cmt_wrapper(self.model, x, cond, torch.tensor([self.sigma_max]), torch.tensor([self.sigma_min]))
         sampled_x.append(x)
         if return_seq:
             return sampled_x
