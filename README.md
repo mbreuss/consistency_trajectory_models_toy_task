@@ -22,8 +22,9 @@ A new class of generative models close of Diffusion models, that learn to model 
 </td>
     <!-- Image cell -->
     <td width="25%">
-      <img src="/images/Figure_1_CTM.png" alt="CTM as a general Class for Score-based Diffusion Models and Consistency Models. " style="max-width:100%;">
+      <img src="./images/Figure_1_CTM.png"style="max-width:100%;">
     </td>
+    <p style="text-align:center"> CTM as a general Class for Score-based Diffusion Models and Consistency Models. </p>
   </tr>
 </table>
 
