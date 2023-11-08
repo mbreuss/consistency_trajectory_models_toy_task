@@ -34,7 +34,7 @@ if __name__ == "__main__":
     )
     train_epochs = 1005
     # chose one of the following toy tasks: 'three_gmm_1D' 'uneven_two_gmm_1D' 'two_gmm_1D' 'single_gaussian_1D'
-    data_manager = DataGenerator('single_gaussian_1D')
+    data_manager = DataGenerator('three_gmm_1D')
     samples, cond = data_manager.generate_samples(10000)
     samples = samples.reshape(-1, 1).to(device)
     pbar = tqdm(range(train_epochs))
