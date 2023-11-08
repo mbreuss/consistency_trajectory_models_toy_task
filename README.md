@@ -31,20 +31,20 @@ The original paper proposes the following training objective consisting of a sco
 However, since we do not wanna use GAIL style training (yet) we only use the score matching objective and the consistency loss.
 
 ```math
-\mathcal{L} = \lambda_{\text{Score}} \mathcal{L}_{score} +\lambda_{\text{CTM}} \mathcal{L}_{consistency} + \lambda_{\text{GAN}} \mathcal{L}_{GAN}
+\mathcal{L}_{\text{Total}} = \lambda_{\text{SM}} \mathcal{L}_{SM} +\lambda_{\text{CTM}} \mathcal{L}_{CTM} + \lambda_{\text{GAN}} \mathcal{L}_{GAN}
 ```
 
 The score matching objective is defined as follows:
 
 ```math
-\mathcal{L}_{score} = \mathbb{E}_{x_0 \sim p_0} \left[ \left\| \nabla_{x_0} \log p_{\theta}(x_0) - f_{\theta}(x_0, t=0) \right\|^2 \right]
+\mathcal{L}_{SM} = \mathbb{E}_{x_0 \sim p_0} \left[ \left\| \nabla_{x_0} \log p_{\theta}(x_0) - f_{\theta}(x_0, t=0) \right\|^2 \right]
 ```
 
 The consistency loss is defined as follows:
 
 The loss is defined as:
 ```math
-\mathcal{L}_{consistency} = \mathbb{E}_{t \in [0, T]}\mathbb{E}_{s \in [0, t]} \mathbb{E}_{tu \in (s, t]} \mathbb{E}_{x_0, p_{0t}(x|x_0)} \left[ d(x_{\text{target}}(x,t,u,s), x_{\text{est}}(x,t,s)) \right]
+\mathcal{L}_{CTM} = \mathbb{E}_{t \in [0, T]}\mathbb{E}_{s \in [0, t]} \mathbb{E}_{tu \in (s, t]} \mathbb{E}_{x_0, p_{0t}(x|x_0)} \left[ d(x_{\text{target}}(x,t,u,s), x_{\text{est}}(x,t,s)) \right]
 ```
 where the $d$ refers to a feature distance in the data space and the two estimates are defined
 ```math

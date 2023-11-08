@@ -19,17 +19,18 @@ if __name__ == "__main__":
     use_pretraining = False
     cm = ConsistencyTrajectoryModel(
         sampler_type='euler',
-        lr=1e-4,
+        lr=5e-4,
         sigma_data=0.5,
         sigma_min=0.05,
         sigma_max=1,
+        n_discrete_t=10,
         conditioned=False,
         device=device,
         rho=7,
         ema_rate=0.999,
         use_teacher=False,
     )
-    train_epochs = 2003
+    train_epochs = 1004
     # chose one of the following toy tasks: 'three_gmm_1D' 'uneven_two_gmm_1D' 'two_gmm_1D' 'single_gaussian_1D'
     data_manager = DataGenerator('two_gmm_1D')
     samples, cond = data_manager.generate_samples(10000)

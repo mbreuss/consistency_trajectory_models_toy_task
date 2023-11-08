@@ -53,6 +53,7 @@ class ConsistencyTrajectoryModel(nn.Module):
             conditioned: bool,
             device: str,
             use_teacher: bool = False,
+            n_discrete_t: int = 20,
             lr: float = 1e-4,
             rho: int = 7,
             cmt_lambda: float = 1.0,
@@ -68,6 +69,7 @@ class ConsistencyTrajectoryModel(nn.Module):
         self.cmt_lambda = cmt_lambda
         self.diffusion_lambda = diffusion_lambda
         self.gan_lambda = gan_lambda
+        self.n_discrete_t = n_discrete_t
         self.model = ConsistencyTrajectoryNetwork(
             x_dim=1,
             hidden_dim=256,
@@ -189,26 +191,30 @@ class ConsistencyTrajectoryModel(nn.Module):
 
         """
         self.model.train()
-        t = self.make_sample_density()(shape=(len(x),), device=self.device)
+        t_ctm = self.sample_noise_levels(shape=(len(x),), N=self.n_discrete_t, device=self.device)
         noise = torch.randn_like(x)
         # next we sample s in range of [0, t]
-        s = torch.rand_like(t) * t
+        s = torch.rand_like(t_ctm) * t_ctm
         # next we sample u in range of (s, t]
-        u = torch.rand_like(t) * (t - s) + s
+        u = torch.rand_like(t_ctm) * (t_ctm - s) + s
         # get the noise samples
-        x_t = x + noise * append_dims(t, x.ndim)
+        x_t = x + noise * append_dims(t_ctm, x.ndim)
         # use the solver if we have a teacher model otherwise use the euler method
-        solver_target = self.solver(x_t, cond, t, u)
+        solver_target = self.solver(x_t, cond, t_ctm, u)
 
         # compute the cmt consistency loss
-        cmt_loss = self.ctm_loss(x_t, cond, t, s, u, solver_target)
+        cmt_loss = self.ctm_loss(x_t, cond, t_ctm, s, u, solver_target)
         
         # compute the diffusion loss
-        diffusion_loss = self.diffusion_loss(x, x_t, cond, t)
+        # sample noise for the diffusion loss from the continuous noise distribution
+        t_sm = self.make_sample_density()(shape=(len(x),), device=self.device)
+        x_t_sm = x + noise * append_dims(t_sm, x.ndim)
+        diffusion_loss = self.diffusion_loss(x, x_t_sm, cond, t_sm)
 
         # compute the GAN loss if chosen
+        # not implemented yet
         if self.use_gan:
-            gan_loss = self.gan_loss(x_t, cond, t)
+            gan_loss = self.gan_loss(x_t, cond, x_t_sm)
         else:
             gan_loss = 0
 
@@ -223,6 +229,29 @@ class ConsistencyTrajectoryModel(nn.Module):
         self._update_ema_weights()
         
         return loss, cmt_loss, diffusion_loss, gan_loss
+    
+    def sample_noise_levels(self, shape, N, device='cpu'):
+        """
+        Samples a tensor of the specified shape with noise levels 
+        from `N` discretized levels of the noise scheduler.
+
+        Args:
+            shape (tuple): Shape of the tensor to sample.
+            N (int): Number of discrete noise levels to discretize the scheduler.
+            device (str): Device on which to create the noise levels, 'cpu' or 'cuda'.
+
+        Returns:
+            torch.Tensor: Tensor containing sampled noise levels.
+        """
+        # Get the N discretized noise levels
+        discretized_sigmas = get_sigmas_exponential(N, self.sigma_min, self.sigma_max, self.device)
+        
+        # Sample indices from this discretized range
+        indices = torch.randint(0, N, size=shape, device=device)
+        
+        # Use these indices to gather the noise levels from the discretized sigmas
+        sampled_sigmas = discretized_sigmas[indices]
+        return sampled_sigmas
 
     def solver(self, x, cond, t, s):
         """
