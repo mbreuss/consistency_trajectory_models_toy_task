@@ -27,14 +27,15 @@ if __name__ == "__main__":
         sigma_max=1.5,
         n_discrete_t=20,
         conditioned=False,
+        diffusion_lambda= 0,
         device=device,
         rho=7,
         ema_rate=0.999,
         use_teacher=False,
     )
-    train_epochs = 2005
+    train_epochs = 1000
     # chose one of the following toy tasks: 'three_gmm_1D' 'uneven_two_gmm_1D' 'two_gmm_1D' 'single_gaussian_1D'
-    data_manager = DataGenerator('three_gmm_1D')
+    data_manager = DataGenerator('two_gmm_1D')
     samples, cond = data_manager.generate_samples(10000)
     samples = samples.reshape(-1, 1).to(device)
     pbar = tqdm(range(train_epochs))

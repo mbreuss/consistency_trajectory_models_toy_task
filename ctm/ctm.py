@@ -83,6 +83,8 @@ class ConsistencyTrajectoryModel(nn.Module):
         ).to(device)
         # we need an ema version of the model for the consistency loss
         self.target_model = copy.deepcopy(self.model)
+        for param in self.target_model.parameters():
+            param.requires_grad = False
         # we further can use a teacher model for the solver
         self.use_teacher = use_teacher
         if self.use_teacher:
@@ -199,10 +201,12 @@ class ConsistencyTrajectoryModel(nn.Module):
         
         # compute the diffusion loss
         # sample noise for the diffusion loss from the continuous noise distribution
-        t_sm = self.make_sample_density()(shape=(len(x),), device=self.device)
-        x_t_sm = x + noise * append_dims(t_sm, x.ndim)
-        diffusion_loss = self.diffusion_loss(x, x_t_sm, cond, t_sm)
-
+        if self.diffusion_lambda > 0:
+            t_sm = self.make_sample_density()(shape=(len(x),), device=self.device)
+            x_t_sm = x + noise * append_dims(t_sm, x.ndim)
+            diffusion_loss = self.diffusion_loss(x, x_t_sm, cond, t_sm)
+        else:
+            diffusion_loss = 0
         # compute the GAN loss if chosen
         # not implemented yet
         if self.use_gan:
@@ -211,6 +215,7 @@ class ConsistencyTrajectoryModel(nn.Module):
             gan_loss = 0
 
         # compute the total loss
+        
         loss = cmt_loss + self.diffusion_lambda * diffusion_loss + self.gan_lambda * gan_loss
         
         # perform the backward pass
@@ -291,20 +296,19 @@ class ConsistencyTrajectoryModel(nn.Module):
         Returns:
             torch.Tensor: Consistency loss tensor of shape [].
         """
-
+        jump_target = einops.repeat(torch.tensor([0]), '1 -> (b 1)', b=len(x_t))
         # compute the cmt prediction: jump from t to s
         ctm_pred = self.cmt_wrapper(self.model, x_t, cond, t, s)
 
-        # compute the cmt target prediction without gradient: jump from u to s
+        # compute the cmt target prediction with ema parameters inside self.target_model: jump from u to s
         with torch.no_grad():
-            ctm_target = self.cmt_wrapper(self.model, solver_target, cond, u, s)
+            ctm_target = self.cmt_wrapper(self.target_model, solver_target, cond, u, s)
+            ctm_target_clean = self.cmt_wrapper(self.target_model, ctm_target, cond, s, jump_target)
 
         # transform them into the clean data space by jumping without gradient from s to 0
         # for both predictions and comparing them in the clean data space
-        jump_target = einops.repeat(torch.tensor([0]), '1 -> (b 1)', b=len(x_t))
-        with torch.no_grad():
-            ctm_pred_clean = self.cmt_wrapper(self.model, ctm_pred, cond, s, jump_target)
-            ctm_target_clean = self.cmt_wrapper(self.model, ctm_target, cond, s, jump_target)
+        # with torch.no_grad():
+        ctm_pred_clean = self.cmt_wrapper(self.model, ctm_pred, cond, s, jump_target)
         
         # compute the cmt loss
         cmt_loss = torch.nn.functional.mse_loss(ctm_pred_clean, ctm_target_clean)
@@ -337,38 +341,6 @@ class ConsistencyTrajectoryModel(nn.Module):
         samples = x + d_prime * append_dims(t2 - t1, x.ndim)
         
         return samples
-
-
-    def score_matching_loss(self, x, cond, t):
-        """
-        Computes the diffusion training loss for the given model, input, condition, and time.
-
-        Args:
-        - self: the object instance of the model
-        - x (torch.Tensor): the input tensor of shape (batch_size, channels, height, width)
-        - cond (torch.Tensor): the conditional input tensor of shape (batch_size, cond_dim)
-        - t (torch.Tensor): the time step tensor of shape (batch_size,)
-
-        Returns:
-        - loss (torch.Tensor): the diffusion training loss tensor of shape ()
-
-        The diffusion training loss is computed based on the following equation from Karras et al. 2022:
-        loss = (model_output - target)^2.mean()
-        where,
-        - noise: a tensor of the same shape as x, containing randomly sampled noise
-        - x_1: a tensor of the same shape as x, obtained by adding the noise tensor to x
-        - c_skip, c_out, c_in: scaling tensors obtained from the diffusion scalings for the given time step
-        - t: a tensor of the same shape as t, obtained by taking the natural logarithm of t and dividing it by 4
-        - model_output: the output tensor of the model for the input x_1, condition cond, and time t
-        - target: the target tensor for the given input x, scaling tensors c_skip, c_out, c_in, and time t
-        """
-        noise = torch.randn_like(x)
-        x_1 = x + noise * append_dims(t, x.ndim)
-        c_skip, c_out, c_in = [append_dims(x, 2) for x in self.get_diffusion_scalings(t)]
-        t = torch.log(t) / 4
-        model_output = self.diffusion_model(x_1 * c_in, cond, t)
-        target = (x - c_skip * x_1) / c_out
-        return (model_output - target).pow(2).mean()
 
     def get_diffusion_scalings(self, sigma):
         """
