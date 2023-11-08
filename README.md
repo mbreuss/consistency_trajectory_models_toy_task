@@ -20,9 +20,7 @@ A new class of generative models close of Diffusion models, that learn to model 
 
 #### Boundary Conditions
 
-$$
-G_{\theta}(x_t, t, s):= \frac{s}{t} x_t + ( 1 - \frac{s}{t})g_{\theta}(x_t, t, s)
-$$
+![Boundary Conditions](https://quicklatex.com/cache3/e9/ql_063cfd6a53d0cc2db965a5efded914e9_l3.png)
 with the standard Karras et al. (2022) preconditioning functions inside $g_{\theta}(x_t, t, s)$.
 The CTM models introduce a novel parameter $s$ that defines the target time step of the ODEs. 
 
@@ -32,21 +30,20 @@ The CTM models introduce a novel parameter $s$ that defines the target time step
 The original paper proposes the following training objective consisting of a score matching objective and a consistency loss combined with an additional GAN loss. 
 However, since we do not wanna use GAIL style training (yet) we only use the score matching objective and the consistency loss.
 
-$$
-\mathcal{L} = \lambda_{\text{Score}} \mathcal{L}_{score} +\lambda_{\text{CTM}}  \mathcal{L}_{consistency} + \lambda_{\text{GAN}} \mathcal{L}_{GAN}
-$$
+![Training Objective](https://quicklatex.com/latex3.f/ql_2b646f_5c25cd7f9058c9e928f9a70b9f8cf678_l3.png)
+
 
 The score matching objective is defined as follows:
 
-$$
-\mathcal{L}_{score} = \mathbb{E}_{x_0 \sim p_0} \left[ \left\| \nabla_{x_0} \log p_{\theta}(x_0) - f_{\theta}(x_0, t=0) \right\|^2 \right]
-$$
+![Score Matching Objective](https://quicklatex.com/latex3.f/ql_2b646f_5c25cd7f9058c9e928f9a70b9f8cf678_l3.png)
 
 The consistency loss is defined as follows:
 
-$$
-\mathcal{L}_{consistency} = \mathbb{E}_{x_0 \sim p_0} \left[ \mathbb{E}_{t \sim \text{Unif}(0, T)} \left[ \left\| x_0 - \phi_{\theta}(x_0, t) \right\|^2 \right] \right]
-$$
+![Consistency Loss](https://quicklatex.com/cache3/ea/ql_85df736cf74762caed890207ebb787ea_l3.png)
+where the $d$ refers to a feature distance in the data space and the two estimates are defined
+![X_est](https://quicklatex.com/cache3/0d/ql_12316b65a84b503821093518c606a70d_l3.png)
+and 
+![X_target](https://quicklatex.com/cache3/42/ql_8edf2b45943254b44344eec5ac031342_l3.png)
 
 
 ---

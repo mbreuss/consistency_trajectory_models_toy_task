@@ -15,11 +15,11 @@ update the weights of the consistency model and the diffusion model.
 if __name__ == "__main__":
 
     device = 'cpu'
-    n_sampling_steps = 10
+    n_sampling_steps = 5
     use_pretraining = False
     cm = ConsistencyTrajectoryModel(
         sampler_type='euler',
-        lr=1e-3,
+        lr=1e-4,
         sigma_data=0.5,
         sigma_min=0.05,
         sigma_max=1,
@@ -29,7 +29,7 @@ if __name__ == "__main__":
         ema_rate=0.999,
         use_teacher=False,
     )
-    train_epochs = 1002
+    train_epochs = 2003
     # chose one of the following toy tasks: 'three_gmm_1D' 'uneven_two_gmm_1D' 'two_gmm_1D' 'single_gaussian_1D'
     data_manager = DataGenerator('two_gmm_1D')
     samples, cond = data_manager.generate_samples(10000)
@@ -46,7 +46,7 @@ if __name__ == "__main__":
             pbar.update(1)
     
 
-    # Train the consistency model either simultanously with the diffusion model or after pretraining
+    # Train the consistency trajectory model either simultanously with the diffusion model or after pretraining
     for i in range(train_epochs):
         cond = cond.reshape(-1, 1).to(device)        
         loss, cmt_loss, diffusion_loss, gan_loss = cm.train_step(samples, cond)
