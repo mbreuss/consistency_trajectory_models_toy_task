@@ -187,12 +187,8 @@ class ConsistencyTrajectoryModel(nn.Module):
         The GAN Part is not implemented right now, since its not attractive for Imitation Learning applications.
         """
         self.model.train()
-        t_ctm = self.sample_noise_levels(shape=(len(x),), N=self.n_discrete_t, device=self.device)
+        t_ctm, s, u = self.sample_noise_levels(shape=(len(x),), N=self.n_discrete_t, device=self.device)
         noise = torch.randn_like(x)
-        # next we sample s in range of [0, t]
-        s = torch.rand_like(t_ctm) * t_ctm
-        # next we sample u in range of (s, t]
-        u = torch.rand_like(t_ctm) * (t_ctm - s) + s
         # get the noise samples
         x_t = x + noise * append_dims(t_ctm, x.ndim)
         # use the solver if we have a teacher model otherwise use the euler method
@@ -243,11 +239,14 @@ class ConsistencyTrajectoryModel(nn.Module):
         discretized_sigmas = get_sigmas_exponential(N, self.sigma_min, self.sigma_max, self.device)
         
         # Sample indices from this discretized range
-        indices = torch.randint(0, N, size=shape, device=device)
-        
+        t = torch.randint(1, N, size=shape, device=device)
+        s = torch.round(torch.rand_like(t.to(torch.float32)) * t.to(torch.float32)).to(torch.int32)
+        u = torch.round(torch.rand_like(t.to(torch.float32)) * (t.to(torch.float32) -1  - s.to(torch.float32))+ s).to(torch.int32)
         # Use these indices to gather the noise levels from the discretized sigmas
-        sampled_sigmas = discretized_sigmas[indices]
-        return sampled_sigmas
+        sigma_t = discretized_sigmas[t]
+        sigma_s = discretized_sigmas[s]
+        sigma_u = discretized_sigmas[u]
+        return sigma_t, sigma_s, sigma_u
 
     def solver(self, x, cond, t, s):
         """
@@ -298,10 +297,7 @@ class ConsistencyTrajectoryModel(nn.Module):
 
         # compute the cmt target prediction without gradient: jump from u to s
         with torch.no_grad():
-            if self.use_teacher:
-                ctm_target = self.cmt_wrapper(self.target_model, solver_target, cond, u, s)
-            else:
-                ctm_target = self.cmt_wrapper(self.model, solver_target, cond, u, s)
+            ctm_target = self.cmt_wrapper(self.model, solver_target, cond, u, s)
 
         # transform them into the clean data space by jumping without gradient from s to 0
         # for both predictions and comparing them in the clean data space

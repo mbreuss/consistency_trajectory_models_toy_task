@@ -25,14 +25,14 @@ if __name__ == "__main__":
         sigma_data=0.5,
         sigma_min=0.05,
         sigma_max=1.5,
-        n_discrete_t=40,
+        n_discrete_t=20,
         conditioned=False,
         device=device,
         rho=7,
         ema_rate=0.999,
         use_teacher=False,
     )
-    train_epochs = 1005
+    train_epochs = 2005
     # chose one of the following toy tasks: 'three_gmm_1D' 'uneven_two_gmm_1D' 'two_gmm_1D' 'single_gaussian_1D'
     data_manager = DataGenerator('three_gmm_1D')
     samples, cond = data_manager.generate_samples(10000)
