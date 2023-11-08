@@ -31,23 +31,29 @@ The original paper proposes the following training objective consisting of a sco
 However, since we do not wanna use GAIL style training (yet) we only use the score matching objective and the consistency loss.
 
 ```math
-\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
+\mathcal{L} = \lambda_{\text{Score}} \mathcal{L}_{score} +\lambda_{\text{CTM}} \mathcal{L}_{consistency} + \lambda_{\text{GAN}} \mathcal{L}_{GAN}
 ```
-
-![Training Objective](https://quicklatex.com/latex3.f/ql_2b646f_5c25cd7f9058c9e928f9a70b9f8cf678_l3.png)
-
 
 The score matching objective is defined as follows:
 
-![Score Matching Objective](https://quicklatex.com/latex3.f/ql_2b646f_5c25cd7f9058c9e928f9a70b9f8cf678_l3.png)
+```math
+\mathcal{L}_{score} = \mathbb{E}_{x_0 \sim p_0} \left[ \left\| \nabla_{x_0} \log p_{\theta}(x_0) - f_{\theta}(x_0, t=0) \right\|^2 \right]
+```
 
 The consistency loss is defined as follows:
 
-![Consistency Loss](https://quicklatex.com/cache3/ea/ql_85df736cf74762caed890207ebb787ea_l3.png)
+The loss is defined as:
+```math
+\mathcal{L}_{consistency} = \mathbb{E}_{t \in [0, T]}\mathbb{E}_{s \in [0, t]} \mathbb{E}_{tu \in (s, t]} \mathbb{E}_{x_0, p_{0t}(x|x_0)} \left[ d(x_{\text{target}}(x,t,u,s), x_{\text{est}}(x,t,s)) \right]
+```
 where the $d$ refers to a feature distance in the data space and the two estimates are defined
-![X_est](https://quicklatex.com/cache3/0d/ql_12316b65a84b503821093518c606a70d_l3.png)
-and 
-![X_target](https://quicklatex.com/cache3/42/ql_8edf2b45943254b44344eec5ac031342_l3.png)
+```math
+x_{\text{est}}(x_t, t, s) = G_{\text{sg}(\theta)}(G_{\theta}(x_t, t, s), s, 0)
+```
+and
+```math
+x_{\text{target}}(x_t, u, s) = G_{\text{sg}(\theta)}(G_{\text{sg}(\theta)}(\text{Solver}(x_t, t, u;\phi), s, 0))
+```
 
 
 ---
