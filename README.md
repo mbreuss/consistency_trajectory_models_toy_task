@@ -1,4 +1,4 @@
-# cmt_toy_task
+# Consistency Trajectory Models Toy Task
 
 
 Minimal unofficial implementation of Consistency Trajectory models proposed in [paper_link](https://openreview.net/attachment?id=ymjI8feDTD&name=pdf).
@@ -29,6 +29,10 @@ The CTM models introduce a novel parameter $s$ that defines the target time step
 
 The original paper proposes the following training objective consisting of a score matching objective and a consistency loss combined with an additional GAN loss. 
 However, since we do not wanna use GAIL style training (yet) we only use the score matching objective and the consistency loss.
+
+```math
+\left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left( \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
+```
 
 ![Training Objective](https://quicklatex.com/latex3.f/ql_2b646f_5c25cd7f9058c9e928f9a70b9f8cf678_l3.png)
 
@@ -84,10 +88,8 @@ None so far :D
  - [ ] Work on better single step inference
  - [ ] Add more documentation
 
-
 ---
 
 ### Acknowledgement
-
 
 - the model is based on the paper [Consistency Trajectory Models](https://openreview.net/attachment?id=ymjI8feDTD&name=pdf)
