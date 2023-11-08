@@ -15,7 +15,13 @@ pip install -e .
 
 ### Consistency Trajectory Models
 
-A new class of generative models close of Diffusion models, that learn to model the trajectory of Probability Flow ODEs directly. Diffusion models learn to predict the denoised action $x_0$ from the noisy action $x_T$ by the current score of the PF ODEs. Consistency Trajectory models learn to predict the trajectory of the ODEs directly and can jump to any point of the trajectory. They can be seen as a generalization of consistency models from Song et al. (2024) and can be trained with the an extended loss function combining score matching objective from diffusion models with a _soft_ consistency loss.
+A new class of generative models close of Diffusion models, that learn to model the trajectory of Probability Flow ODEs directly. Diffusion models learn to predict the denoised action $x_0$ from the noisy action $x_T$ by the current score of the PF ODEs. Consistency Trajectory models learn to predict the trajectory of the ODEs directly and can jump to any point of the trajectory. They can be seen as a generalization of consistency models from [Song et al. (2023)](https://arxiv.org/pdf/2303.01469.pdf) and can be trained with the an extended loss function combining score matching objective from diffusion models with a _soft_ consistency loss.
+
+<div style="display:flex">
+  <img src="./images/Figure_1_CTM.png" width="25%" />
+  <img src="./images/Figure_2_CTM.png" width="75%" />
+</div>
+<p style="text-align:center">CTM as a general Class for Score-based Diffusion Models and Consistency Models. Right: Overview of different model classes w.r.t. Sampling from the ODE</p>
 
 
 #### Boundary Conditions
@@ -62,7 +68,6 @@ x_{\text{target}}(x_t, u, s) = G_{\text{sg}(\theta)}(G_{\text{sg}(\theta)}(\text
 ### Toy Task Results 
 
 Here are some first results of CMT trained from scratch without a teacher model.
-
 
 <div style="display:flex">
   <img src="./images/cm_euler_epochs_2000.png" width="45%" />

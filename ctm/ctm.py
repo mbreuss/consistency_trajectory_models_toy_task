@@ -46,6 +46,8 @@ class ConsistencyTrajectoryModel(nn.Module):
 
     def __init__(
             self, 
+            data_dim: int,
+            cond_dim: int,
             sampler_type: str,
             sigma_data: float,
             sigma_min: float,
@@ -56,7 +58,6 @@ class ConsistencyTrajectoryModel(nn.Module):
             n_discrete_t: int = 20,
             lr: float = 1e-4,
             rho: int = 7,
-            cmt_lambda: float = 1.0,
             diffusion_lambda: float = 1.0,
             gan_lambda: float = 0.0,
             ema_rate: float = 0.999,
@@ -66,18 +67,17 @@ class ConsistencyTrajectoryModel(nn.Module):
         super().__init__()
         self.use_gan = False
         self.ema_rate = ema_rate
-        self.cmt_lambda = cmt_lambda
         self.diffusion_lambda = diffusion_lambda
         self.gan_lambda = gan_lambda
         self.n_discrete_t = n_discrete_t
         self.model = ConsistencyTrajectoryNetwork(
-            x_dim=1,
+            x_dim=data_dim,
             hidden_dim=256,
             time_embed_dim=4,
-            cond_dim=1,
+            cond_dim=cond_dim,
             cond_mask_prob=0.0,
             num_hidden_layers=4,
-            output_dim=1,
+            output_dim=data_dim,
             dropout_rate=0.1,
             cond_conditional=conditioned
         ).to(device)
@@ -183,12 +183,8 @@ class ConsistencyTrajectoryModel(nn.Module):
         """
         Main training step method to compute the loss for the Consistency Trajectory Model.
         The loss consists of three parts: the consistency loss, the diffusion loss, and the GAN loss (optional).
-        The first part is similar to Song et al. 23 and the second part is similar to Karras et al. 2022.
-
-        Args:
-
-        Returns:
-
+        The first part is similar to Song et al. (2023) and the second part is similar to Karras et al. (2022).
+        The GAN Part is not implemented right now, since its not attractive for Imitation Learning applications.
         """
         self.model.train()
         t_ctm = self.sample_noise_levels(shape=(len(x),), N=self.n_discrete_t, device=self.device)
@@ -219,7 +215,7 @@ class ConsistencyTrajectoryModel(nn.Module):
             gan_loss = 0
 
         # compute the total loss
-        loss = self.cmt_lambda * cmt_loss + self.diffusion_lambda * diffusion_loss + self.gan_lambda * gan_loss
+        loss = cmt_loss + self.diffusion_lambda * diffusion_loss + self.gan_lambda * gan_loss
         
         # perform the backward pass
         self.optimizer.zero_grad()
@@ -302,7 +298,10 @@ class ConsistencyTrajectoryModel(nn.Module):
 
         # compute the cmt target prediction without gradient: jump from u to s
         with torch.no_grad():
-            ctm_target = self.cmt_wrapper(self.target_model, solver_target, cond, u, s)
+            if self.use_teacher:
+                ctm_target = self.cmt_wrapper(self.target_model, solver_target, cond, u, s)
+            else:
+                ctm_target = self.cmt_wrapper(self.model, solver_target, cond, u, s)
 
         # transform them into the clean data space by jumping without gradient from s to 0
         # for both predictions and comparing them in the clean data space
