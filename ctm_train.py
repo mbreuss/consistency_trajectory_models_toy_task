@@ -16,24 +16,24 @@ if __name__ == "__main__":
 
     device = 'cpu'
     n_sampling_steps = 10
-    use_pretraining = False
+    use_pretraining = True
     cm = ConsistencyTrajectoryModel(
         data_dim=1,
         cond_dim=1,
         sampler_type='euler',
-        lr=5e-4,
+        lr=4e-4,
         sigma_data=0.5,
-        sigma_min=0.05,
-        sigma_max=1.5,
-        n_discrete_t=20,
+        sigma_min=0.1,
+        sigma_max=1,
+        n_discrete_t=18,
         conditioned=False,
-        diffusion_lambda= 0,
+        diffusion_lambda= 1,
         device=device,
         rho=7,
         ema_rate=0.999,
-        use_teacher=False,
+        use_teacher=use_pretraining,
     )
-    train_epochs = 1000
+    train_epochs = 501
     # chose one of the following toy tasks: 'three_gmm_1D' 'uneven_two_gmm_1D' 'two_gmm_1D' 'single_gaussian_1D'
     data_manager = DataGenerator('two_gmm_1D')
     samples, cond = data_manager.generate_samples(10000)
@@ -48,6 +48,8 @@ if __name__ == "__main__":
             diff_loss = cm.diffusion_train_step(samples, cond, i, train_epochs)
             pbar.set_description(f"Step {i}, Diff Loss: {diff_loss:.8f}")
             pbar.update(1)
+        
+        cm.update_teacher_model()
     
 
     # Train the consistency trajectory model either simultanously with the diffusion model or after pretraining

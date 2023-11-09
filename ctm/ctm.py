@@ -301,14 +301,14 @@ class ConsistencyTrajectoryModel(nn.Module):
         ctm_pred = self.cmt_wrapper(self.model, x_t, cond, t, s)
 
         # compute the cmt target prediction with ema parameters inside self.target_model: jump from u to s
-        with torch.no_grad():
-            ctm_target = self.cmt_wrapper(self.target_model, solver_target, cond, u, s)
-            ctm_target_clean = self.cmt_wrapper(self.target_model, ctm_target, cond, s, jump_target)
+        # with torch.no_grad():
+        ctm_target = self.cmt_wrapper(self.target_model, solver_target, cond, u, s)
+        ctm_target_clean = self.cmt_wrapper(self.target_model, ctm_target, cond, s, jump_target)
 
         # transform them into the clean data space by jumping without gradient from s to 0
         # for both predictions and comparing them in the clean data space
         # with torch.no_grad():
-        ctm_pred_clean = self.cmt_wrapper(self.model, ctm_pred, cond, s, jump_target)
+        ctm_pred_clean = self.cmt_wrapper(self.target_model, ctm_pred, cond, s, jump_target)
         
         # compute the cmt loss
         cmt_loss = torch.nn.functional.mse_loss(ctm_pred_clean, ctm_target_clean)
@@ -426,6 +426,17 @@ class ConsistencyTrajectoryModel(nn.Module):
         
     def update_teacher_model(self):
         self.teacher_model.load_state_dict(self.target_model.state_dict())
+        for param in self.teacher_model.parameters():
+            param.requires_grad = False
+        
+        # next we init the model and target model with the same weights from the teacher
+        self.model.load_state_dict(self.teacher_model.state_dict())
+        for param in self.model.parameters():
+            param.requires_grad = True
+        self.target_model.load_state_dict(self.teacher_model.state_dict())
+        for param in self.target_model.parameters():
+            param.requires_grad = False
+        print('Updated Teacher Model and froze all parameters!')
         
     def euler_update_step(self, x, t1, t2, x0):
         """
@@ -500,7 +511,7 @@ class ConsistencyTrajectoryModel(nn.Module):
         self.model.eval()
         if cond is not None:
             cond = cond.to(self.device)
-        x = torch.randn_like(x_shape).to(self.device) * self.sigma_max * 1.5
+        x = torch.randn_like(x_shape).to(self.device) * self.sigma_max 
         # x = torch.linspace(-4, 4, len(x_shape)).view(len(x_shape), 1).to(self.device)
 
         sampled_x = []
@@ -514,6 +525,39 @@ class ConsistencyTrajectoryModel(nn.Module):
         for i in trange(len(sigmas) - 1, disable=True):
             denoised = self.diffusion_wrapper(self.model, x, cond, sigmas[i], sigmas[i])
             x = self.euler_update_step(x, sigmas[i], sigmas[i+1], denoised)
+            sampled_x.append(x)
+        if return_seq:
+            return sampled_x
+        else:
+            return x
+    
+    def ctm_gamma_sampler(self, x_shape, cond, gamma, n_sampling_steps=None, return_seq=False):
+        """
+        Alg. 3 in the paper of CTM (page 22)
+        """
+        self.model.eval()
+        if cond is not None:
+            cond = cond.to(self.device)
+        x = torch.randn_like(x_shape).to(self.device) * self.sigma_max
+        # x = torch.linspace(-4, 4, len(x_shape)).view(len(x_shape), 1).to(self.device)
+
+        sampled_x = []
+        if n_sampling_steps is None:
+            n_sampling_steps = self.n_sampling_steps
+        
+        # sample the sequence of timesteps
+        sigmas = self.sample_seq_timesteps(N=n_sampling_steps, type='exponential')
+        sampled_x.append(x)
+        # iterate over the remaining timesteps
+        for i in trange(len(sigmas) - 1, disable=True):
+            # get thenew sigma value 
+            sigma_hat = sigmas[i+1] * torch.sqrt(1 - gamma ** 2)
+            # get the denoised value
+            x_t_gamma = self.cmt_wrapper(self.model, x, cond, sigmas[i], sigma_hat)
+            
+            if sigmas[i + 1] > 0:
+                x = x_t_gamma + gamma * sigmas[i+1] * torch.randn_like(x_shape).to(self.device)
+            
             sampled_x.append(x)
         if return_seq:
             return sampled_x
