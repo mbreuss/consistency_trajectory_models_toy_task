@@ -23,8 +23,9 @@ if __name__ == "__main__":
         sampler_type='euler',
         lr=4e-4,
         sigma_data=0.5,
-        sigma_min=0.1,
-        sigma_max=1,
+        sigma_min=0.05,
+        solver_type='heun',
+        sigma_max=2,
         n_discrete_t=18,
         conditioned=False,
         diffusion_lambda= 1,
@@ -33,10 +34,10 @@ if __name__ == "__main__":
         ema_rate=0.999,
         use_teacher=use_pretraining,
     )
-    train_epochs = 501
+    train_epochs = 2002
     # chose one of the following toy tasks: 'three_gmm_1D' 'uneven_two_gmm_1D' 'two_gmm_1D' 'single_gaussian_1D'
-    data_manager = DataGenerator('two_gmm_1D')
-    samples, cond = data_manager.generate_samples(10000)
+    data_manager = DataGenerator('three_gmm_1D')
+    samples, cond = data_manager.generate_samples(5000)
     samples = samples.reshape(-1, 1).to(device)
     pbar = tqdm(range(train_epochs))
     
@@ -50,6 +51,17 @@ if __name__ == "__main__":
             pbar.update(1)
         
         cm.update_teacher_model()
+        
+        plot_main_figure(
+            data_manager.compute_log_prob, 
+            cm, 
+            200, 
+            train_epochs, 
+            sampling_method='euler', 
+            n_sampling_steps=n_sampling_steps,
+            x_range=[-4, 4], 
+            save_path='./plots/'
+        )
     
 
     # Train the consistency trajectory model either simultanously with the diffusion model or after pretraining
@@ -62,16 +74,17 @@ if __name__ == "__main__":
     
     # Plotting the results of the training
     # We do this for the one-step and the multi-step sampler to compare the results
-    plot_main_figure(
-            data_manager.compute_log_prob, 
-            cm, 
-            200, 
-            train_epochs, 
-            sampling_method='euler', 
-            n_sampling_steps=n_sampling_steps,
-            x_range=[-4, 4], 
-            save_path='./plots/'
-        )
+    if not use_pretraining:
+        plot_main_figure(
+                data_manager.compute_log_prob, 
+                cm, 
+                200, 
+                train_epochs, 
+                sampling_method='euler', 
+                n_sampling_steps=n_sampling_steps,
+                x_range=[-4, 4], 
+                save_path='./plots/'
+            )
     
     plot_main_figure(
         data_manager.compute_log_prob, 

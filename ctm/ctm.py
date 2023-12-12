@@ -55,6 +55,7 @@ class ConsistencyTrajectoryModel(nn.Module):
             conditioned: bool,
             device: str,
             use_teacher: bool = False,
+            solver_type: str = 'heun',
             n_discrete_t: int = 20,
             lr: float = 1e-4,
             rho: int = 7,
@@ -97,6 +98,7 @@ class ConsistencyTrajectoryModel(nn.Module):
         self.sigma_max = sigma_max
         self.rho = rho
         self.n_sampling_steps = n_sampling_steps
+        self.solver_type = solver_type
         self.sigma_sample_density_type = sigma_sample_density_type
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
         self.epochs = 0
@@ -262,7 +264,12 @@ class ConsistencyTrajectoryModel(nn.Module):
         else:
             solver = self.model
 
-        solver_pred = self.heun_update_step(solver, x, cond, t, s)
+        if self.solver_type == 'euler':
+            solver_pred = self.euler_update_step(solver, x, cond, t, s)
+        elif self.solver_type == 'heun':
+            solver_pred = self.heun_update_step(solver, x, cond, t, s)
+        elif self.solver_type == 'ddim':
+            solver_pred = self.ddim_update_step(solver, x, cond, t, s)
 
         return solver_pred
 
@@ -330,15 +337,39 @@ class ConsistencyTrajectoryModel(nn.Module):
         Returns:
         torch.Tensor: The output tensor after taking the Euler update step.
         """
-        denoised = self.diffusion_wrapper(model, x, cond, t1, t1)
+        denoised = self.cmt_wrapper(model, x, cond, t1, t1)
         d = (x - denoised) / append_dims(t1, x.ndim)
         
         
         sample_temp = x + d * append_dims(t2 - t1, x.ndim)
-        denoised_2 = self.diffusion_wrapper(model, sample_temp, cond, t2, t2)
+        denoised_2 = self.cmt_wrapper(model, sample_temp, cond, t2, t2)
         d_2 = (sample_temp - denoised_2) / append_dims(t2, x.ndim)
         d_prime = (d + d_2) / 2
         samples = x + d_prime * append_dims(t2 - t1, x.ndim)
+        
+        return samples
+    
+    @torch.no_grad()   
+    def ddim_update_step(self, model, x, cond, t1, t2):
+        """
+        Computes a single Heun update step from the DDIM sampler with the teacher model
+
+        Parameters:
+        x (torch.Tensor): The input tensor.
+        t1 (torch.Tensor): The initial timestep.
+        t2 (torch.Tensor): The final timestep.
+        x0 (torch.Tensor): The ground truth value used to compute the Euler update step.
+
+        Returns:
+        torch.Tensor: The output tensor after taking the Euler update step.
+        """
+        sigma_fn = lambda t: t.neg().exp()
+        t_fn = lambda sigma: sigma.log().neg()
+        denoised = self.cmt_wrapper(model, x, cond, t1, t1)
+        
+        t, t_next = t_fn(t1), t_fn(t2)
+        h = append_dims(t_next - t, x.ndim)
+        samples = append_dims((sigma_fn(t_next) / sigma_fn(t)), x.ndim) * x - (-h).expm1() * denoised
         
         return samples
 
@@ -438,7 +469,7 @@ class ConsistencyTrajectoryModel(nn.Module):
             param.requires_grad = False
         print('Updated Teacher Model and froze all parameters!')
         
-    def euler_update_step(self, x, t1, t2, x0):
+    def euler_update_step(self, x, t1, t2, denoised):
         """
         Computes a single update step from the Euler sampler with a ground truth value.
 
@@ -451,18 +482,24 @@ class ConsistencyTrajectoryModel(nn.Module):
         Returns:
         torch.Tensor: The output tensor after taking the Euler update step.
         """
-        denoiser = x0
-
-        d = (x - denoiser) / append_dims(t1, x.ndim)
+        d = (x - denoised) / append_dims(t1, x.ndim)
         samples = x + d * append_dims(t2 - t1, x.ndim)
-
+        return samples
+    
+    def euler_single_step(self, model, x, cond, t1, t2):
+        """
+        
+        """
+        denoised = self.diffusion_wrapper(model, x, cond, t1, t1)
+        d = (x - denoised) / append_dims(t1, x.ndim)
+        samples = x + d * append_dims(t2 - t1, x.ndim)
         return samples
 
     @torch.no_grad()
     @ema_eval_wrapper
     def sample_singlestep(self, x_shape, cond, return_seq=False):
         """
-        Samples a single step from the trained consistency model. 
+        Samples a single step from the trained consistency trajectory model. 
         If return_seq is True, returns a list of sampled tensors, 
         otherwise returns a single tensor. 
         
@@ -479,7 +516,7 @@ class ConsistencyTrajectoryModel(nn.Module):
         if cond is not None:
             cond = cond.to(self.device)
 
-        x = torch.randn_like(x_shape).to(self.device) * self.sigma_max * 1.5
+        x = torch.randn_like(x_shape).to(self.device) * self.sigma_max
         sampled_x.append(x)
         x = self.cmt_wrapper(self.model, x, cond, torch.tensor([self.sigma_max]), torch.tensor([0]))
         sampled_x.append(x)
@@ -531,6 +568,8 @@ class ConsistencyTrajectoryModel(nn.Module):
         else:
             return x
     
+    @torch.no_grad()
+    @ema_eval_wrapper
     def ctm_gamma_sampler(self, x_shape, cond, gamma, n_sampling_steps=None, return_seq=False):
         """
         Alg. 3 in the paper of CTM (page 22)
