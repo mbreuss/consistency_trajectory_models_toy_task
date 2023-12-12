@@ -116,4 +116,4 @@ None so far :D
 
 ### Acknowledgement
 
-- the model is based on the paper [Consistency Trajectory Models](https://openreview.net/attachment?id=ymjI8feDTD&name=pdf)
+- the model is based on the paper [Consistency Trajectory Models]([https://openreview.net/attachment?id=ymjI8feDTD&name=pdf](https://arxiv.org/pdf/2310.02279.pdf)https://arxiv.org/pdf/2310.02279.pdf) 
