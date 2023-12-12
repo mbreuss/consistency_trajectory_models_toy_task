@@ -14,19 +14,7 @@ pip install -e .
 ---
 
 ### Consistency Trajectory Models
-<table>
-  <tr>
-    <!-- Text cell -->
-    <td width="55%" valign="top">
 A new class of generative models close of Diffusion models, that learn to model the trajectory of Probability Flow ODEs directly. Diffusion models learn to predict the denoised action $x_0$ from the noisy action $x_T$ by the current score of the PF ODEs. Consistency Trajectory models learn to predict the trajectory of the ODEs directly and can jump to any point of the trajectory. 
-</td>
-    <!-- Image cell -->
-    <td width="45%">
-      <img src="./images/Figure_1_CTM.png" width="95%" >
-      <p style="text-align:center"> CTM as a general Class for Score-based Diffusion Models and Consistency Models. </p>
-    </td>
-  </tr>
-</table>
 They can be seen as a generalization of consistency models from [Song et al. (2023)](https://arxiv.org/pdf/2303.01469.pdf) and can be trained with the an extended loss function combining score matching objective from diffusion models with a _soft_ consistency loss.
 
 <div style="display:flex">
