@@ -1,7 +1,7 @@
 # Consistency Trajectory Models Toy Task
 
 
-Minimal unofficial implementation of Consistency Trajectory models proposed in [paper_link](https://openreview.net/attachment?id=ymjI8feDTD&name=pdf).
+Minimal unofficial implementation of Consistency Trajectory models proposed in [paper_link](https://openreview.net/attachment?id=ymjI8feDTD&name=pdf). High chance that some implementation errors remain, since everything is implemented from the paper without code examples. 
 
 ---
 
@@ -59,9 +59,7 @@ The score matching objective is defined as follows:
 \mathcal{L}_{SM} = \mathbb{E}_{x_0 \sim p_0} \left[ \left\| \nabla_{x_0} \log p_{\theta}(x_0) - f_{\theta}(x_0, t=0) \right\|^2 \right]
 ```
 
-The consistency loss is defined as follows:
-
-The loss is defined as:
+The soft consistency matching loss is defined as:
 ```math
 \mathcal{L}_{CTM} = \mathbb{E}_{t \in [0, T]}\mathbb{E}_{s \in [0, t]} \mathbb{E}_{tu \in (s, t]} \mathbb{E}_{x_0, p_{0t}(x|x_0)} \left[ d(x_{\text{target}}(x,t,u,s), x_{\text{est}}(x,t,s)) \right]
 ```
@@ -74,13 +72,15 @@ and
 x_{\text{target}}(x_t, u, s) = G_{\text{sg}(\theta)}(G_{\text{sg}(\theta)}(\text{Solver}(x_t, t, u;\phi), s, 0))
 ```
 
+For our application the GAN loss is not usable, thus I didnt implement it yet. 
+
 
 ---
 
 
 ### Toy Task Results 
 
-Here are some first results of CMT trained from scratch without a teacher model.
+Here are some first results of CMT trained from scratch without a teacher model. Further experiments with teacher models need to be tested. 
 
 <div style="display:flex">
   <img src="./images/cm_euler_epochs_2000.png" width="45%" />
@@ -89,7 +89,7 @@ Here are some first results of CMT trained from scratch without a teacher model.
 <p style="text-align:center">From left to right: CMT with 10 Euler Steps, Multistep and Single Step prediction with CMT.</p>
 
 
-Right now the model performs significantly better with 10 steps. Working on improving the single step prediction. Lets see whats possible. 
+Right now the model performs significantly better with 10 steps. Working on improving the single step prediction. Lets see whats possible. However, even the main author of the consistency model paper noted in his recent rebuttal [link](https://openreview.net/forum?id=WNzy9bRDvG), that Consistency models work better on high-dimensional datasets. So it can be, that the same counts for CTM. 
 
 
 --- 
@@ -97,9 +97,7 @@ Right now the model performs significantly better with 10 steps. Working on impr
 
 ### Lessons learned
 
-
-None so far :D 
-
+...
 
 ---
 
@@ -117,3 +115,17 @@ None so far :D
 ### Acknowledgement
 
 - the model is based on the paper [Consistency Trajectory Models]([https://openreview.net/attachment?id=ymjI8feDTD&name=pdf](https://arxiv.org/pdf/2310.02279.pdf)https://arxiv.org/pdf/2310.02279.pdf) 
+
+If you found this code helpfull please cite the original paper:
+
+```bash
+@article{kim2023consistency,
+  title={Consistency Trajectory Models: Learning Probability Flow ODE Trajectory of Diffusion},
+  author={Kim, Dongjun and Lai, Chieh-Hsin and Liao, Wei-Hsiang and Murata, Naoki and Takida, Yuhta and Uesaka, Toshimitsu and He, Yutong and Mitsufuji, Yuki and Ermon, Stefano},
+  journal={arXiv preprint arXiv:2310.02279},
+  year={2023}
+}
+
+```
+
+---
