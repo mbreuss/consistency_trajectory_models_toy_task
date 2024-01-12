@@ -44,7 +44,7 @@ However, since we do not wanna use GAIL style training (yet) we only use the sco
 The score matching objective is defined as follows:
 
 ```math
-\mathcal{L}_{SM} = \mathbb{E}_{x_0 \sim p_0} \left[ \left\| x_0 - f_{\theta}(x_0, t=t, s=t) \right\|^2 \right]
+\mathcal{L}_{SM} = \mathbb{E}_{x_0 \sim p_0} \left[ \left\| x_0 - f_{\theta}(x_t, t=t, s=t) \right\|^2 \right]
 ```
 
 The soft consistency matching loss is defined as:
