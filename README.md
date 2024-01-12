@@ -44,7 +44,7 @@ However, since we do not wanna use GAIL style training (yet) we only use the sco
 The score matching objective is defined as follows:
 
 ```math
-\mathcal{L}_{SM} = \mathbb{E}_{x_0 \sim p_0} \left[ \left\| \nabla_{x_0} \log p_{\theta}(x_0) - f_{\theta}(x_0, t=0) \right\|^2 \right]
+\mathcal{L}_{SM} = \mathbb{E}_{x_0 \sim p_0} \left[ \left\| x_0 - f_{\theta}(x_0, t=t, s=t) \right\|^2 \right]
 ```
 
 The soft consistency matching loss is defined as:
@@ -59,6 +59,7 @@ and
 ```math
 x_{\text{target}}(x_t, u, s) = G_{\text{sg}(\theta)}(G_{\text{sg}(\theta)}(\text{Solver}(x_t, t, u;\phi), s, 0))
 ```
+The soft consistency loss tries to enforce local consistency and global consistency for the model, which should enable small jumps for ODE-like sovlers and large jumps for few step generation.
 
 For our application the GAN loss is not usable, thus I didnt implement it yet. 
 
