@@ -143,7 +143,7 @@ def plot_main_figure(
     ax2.tick_params(axis='y', labelsize=16)
     # ax2.set_yticks('log')
     plt.subplots_adjust(hspace=0)
-    plt.savefig(save_path + '/cm_' + sampling_method + f'_epochs_{train_epochs}.png', bbox_inches='tight', pad_inches=0.1)    
+    plt.savefig(save_path + 'cm_' + sampling_method + f'_epochs_{train_epochs}.png', bbox_inches='tight', pad_inches=0.1)    
     
     print('Plot saved!')
     
