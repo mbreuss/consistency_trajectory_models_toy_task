@@ -1,7 +1,8 @@
 # Consistency Trajectory Models Toy Task
 
-
-Minimal unofficial implementation of Consistency Trajectory models proposed in [paper_link](https://openreview.net/attachment?id=ymjI8feDTD&name=pdf). High chance that some implementation errors remain, since everything is implemented from the paper without code examples. 
+Minimal unofficial implementation of Consistency Trajectory models proposed in [paper_link](https://openreview.net/attachment?id=ymjI8feDTD&name=pdf). 
+High chance that some implementation errors remain, since everything is implemented from the paper without code examples. 
+Please also check out the original code from the authors to run experiments for high-resolution image generation experiments [ctm](https://github.com/sony/ctm).
 
 ---
 
@@ -114,6 +115,8 @@ If you found this code helpfull please cite the original paper:
   journal={arXiv preprint arXiv:2310.02279},
   year={2023}
 }
+
+---
 
 ```
 
